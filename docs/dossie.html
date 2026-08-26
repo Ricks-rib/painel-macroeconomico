@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dossiê Painel Macroeconômico</title>
+<meta name="description" content="As decisões de arquitetura de um painel de indicadores do Banco Central com IA local, e a medição que sustenta cada uma." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" />
+
+<style>
+  /* ===================================================================
+     TOKENS
+
+     CLARO por origem — o painel é claro por decisão, e a paleta dele foi
+     validada para a superfície clara. O tema escuro entra pelos dois
+     caminhos que o leitor pode tomar: preferência do sistema e escolha
+     explícita.
+
+     A cor tem significado fixo na página inteira:
+       --accent  azul     → o sistema funcionando conforme projetado
+       --flag    âmbar    → um defeito encontrado durante a construção
+       --bad     vermelho → um número que estava errado
+       --good    verde    → verificação que passou
+     =================================================================== */
+  :root {
+    --ground: #eef0f4;
+    --surface: #ffffff;
+    --raised: #f5f7fa;
+    --sunken: #e6e9ef;
+    --hairline: rgba(16, 21, 28, 0.11);
+    --hairline-strong: rgba(16, 21, 28, 0.2);
+
+    --ink: #10151c;
+    --ink-2: #47525e;
+    --ink-3: #737f8d;
+
+    --accent: #1c62b5;
+    --accent-soft: rgba(28, 98, 181, 0.08);
+    --accent-line: rgba(28, 98, 181, 0.26);
+
+    --flag: #9c5310;
+    --flag-soft: rgba(156, 83, 16, 0.08);
+    --flag-line: rgba(156, 83, 16, 0.26);
+
+    --good: #10704f;
+    --good-soft: rgba(16, 112, 79, 0.09);
+    --bad: #b3352c;
+    --bad-soft: rgba(179, 53, 44, 0.08);
+    --bad-line: rgba(179, 53, 44, 0.26);
+
+    --shadow: 0 1px 2px rgba(16, 21, 28, 0.06), 0 8px 24px -14px rgba(16, 21, 28, 0.22);
+
+    --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+
+    --measure: 67ch;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0e1218; --surface: #151b24; --raised: #1c242f; --sunken: #0a0e13;
+      --hairline: rgba(233, 240, 248, 0.09); --hairline-strong: rgba(233, 240, 248, 0.17);
+      --ink: #eef1f5; --ink-2: #a7b2c1; --ink-3: #6d7a8b;
+      --accent: #4f97ea; --accent-soft: rgba(79, 151, 234, 0.14); --accent-line: rgba(79, 151, 234, 0.34);
+      --flag: #dc8a3c; --flag-soft: rgba(220, 138, 60, 0.13); --flag-line: rgba(220, 138, 60, 0.32);
+      --good: #35b07a; --good-soft: rgba(53, 176, 122, 0.14);
+      --bad: #e06a60; --bad-soft: rgba(224, 106, 96, 0.13); --bad-line: rgba(224, 106, 96, 0.32);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0e1218; --surface: #151b24; --raised: #1c242f; --sunken: #0a0e13;
+    --hairline: rgba(233, 240, 248, 0.09); --hairline-strong: rgba(233, 240, 248, 0.17);
+    --ink: #eef1f5; --ink-2: #a7b2c1; --ink-3: #6d7a8b;
+    --accent: #4f97ea; --accent-soft: rgba(79, 151, 234, 0.14); --accent-line: rgba(79, 151, 234, 0.34);
+    --flag: #dc8a3c; --flag-soft: rgba(220, 138, 60, 0.13); --flag-line: rgba(220, 138, 60, 0.32);
+    --good: #35b07a; --good-soft: rgba(53, 176, 122, 0.14);
+    --bad: #e06a60; --bad-soft: rgba(224, 106, 96, 0.13); --bad-line: rgba(224, 106, 96, 0.32);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+
+  /* =================================================================== */
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: var(--font-body); font-size: 17px; line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  .shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); max-width: 1180px; margin: 0 auto; }
+  @media (max-width: 900px) { .shell { grid-template-columns: minmax(0, 1fr); } }
+
+  .rail {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 34px 20px 28px; border-right: 1px solid var(--hairline);
+  }
+  @media (max-width: 900px) { .rail { display: none; } }
+  .rail-mark { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 20px; }
+  .rail-list { list-style: none; margin: 0; padding: 0; }
+  .rail-link {
+    display: block; padding: 5px 0 5px 11px; font-family: var(--font-display);
+    font-size: 13px; line-height: 1.4; color: var(--ink-3); text-decoration: none;
+    border-left: 2px solid transparent; transition: color .12s, border-color .12s;
+  }
+  .rail-link:hover { color: var(--ink-2); }
+  .rail-link[aria-current="true"] { color: var(--ink); border-color: var(--accent); }
+  .rail-foot { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--hairline); font-family: var(--font-mono); font-size: 11px; line-height: 1.9; color: var(--ink-3); }
+
+  .main { padding: 46px 40px 120px; min-width: 0; }
+  @media (max-width: 900px) { .main { padding: 34px 20px 80px; } }
+  section { padding-top: 54px; scroll-margin-top: 20px; }
+
+  .prose { max-width: var(--measure); }
+  .prose p { margin: 0 0 16px; color: var(--ink-2); }
+  .prose p strong { color: var(--ink); font-weight: 600; }
+  .prose > :last-child { margin-bottom: 0; }
+
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: var(--accent); margin: 0 0 9px; }
+  .eyebrow--flag { color: var(--flag); }
+
+  h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(31px, 4.6vw, 45px); line-height: 1.11; letter-spacing: -.022em; margin: 0 0 20px; }
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: clamp(23px, 2.7vw, 29px); line-height: 1.22; letter-spacing: -.014em; margin: 0 0 16px; }
+  h3 { font-family: var(--font-display); font-weight: 600; font-size: 18px; margin: 30px 0 11px; letter-spacing: -.006em; }
+  .lede { font-size: 20px; line-height: 1.55; color: var(--ink-2); }
+  a { color: var(--accent); }
+
+  .hero { padding-top: 8px; }
+  .hero-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 20px; }
+  .hero-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); flex: none; }
+
+  .thesis {
+    margin: 26px 0 0; padding: 20px 24px; border-left: 3px solid var(--accent);
+    background: var(--accent-soft); border-radius: 0 6px 6px 0;
+    font-size: 18px; line-height: 1.55; color: var(--ink); max-width: var(--measure);
+  }
+  .thesis em { font-style: normal; font-weight: 600; }
+
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 1px; margin-top: 34px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: 7px; overflow: hidden; }
+  .fact { background: var(--surface); padding: 15px 16px; }
+  .fact-n { font-family: var(--font-display); font-weight: 700; font-size: 25px; letter-spacing: -.02em; display: block; }
+  .fact-l { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; display: block; line-height: 1.45; }
+
+  .panel { background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px; padding: 20px 22px; margin: 22px 0; }
+  .note { border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; padding: 15px 19px; margin: 22px 0; font-size: 15.5px; line-height: 1.58; color: var(--ink-2); max-width: var(--measure); }
+  .note--flag { border-color: var(--flag); background: var(--flag-soft); }
+  .note--bad { border-color: var(--bad); background: var(--bad-soft); }
+  .note strong { color: var(--ink); }
+
+  pre { margin: 18px 0; padding: 15px 17px; background: var(--sunken); border: 1px solid var(--hairline); border-radius: 7px; overflow-x: auto; }
+  code { font-family: var(--font-mono); font-size: 13px; }
+  .prose code, td code, li code { background: var(--raised); border: 1px solid var(--hairline); border-radius: 3px; padding: 1px 5px; font-size: 13px; }
+  pre code { background: none; border: 0; padding: 0; color: var(--ink-2); line-height: 1.65; display: block; white-space: pre; }
+  .c-bad { color: var(--bad); }
+  .c-good { color: var(--good); }
+  .c-cmt { color: var(--ink-3); font-style: italic; }
+
+  .scroll { overflow-x: auto; margin: 20px 0; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--font-display); font-size: 14px; min-width: 440px; }
+  th { text-align: left; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-3); padding: 0 14px 9px 0; border-bottom: 1px solid var(--hairline-strong); white-space: nowrap; }
+  td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--hairline); color: var(--ink-2); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .strong { color: var(--ink); font-weight: 600; }
+
+  .chip { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 1.5px 7px; border-radius: 3px; background: var(--raised); border: 1px solid var(--hairline-strong); color: var(--ink-2); white-space: nowrap; }
+  .chip--good { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+  .chip--bad { background: var(--bad-soft); border-color: var(--bad-line); color: var(--bad); }
+  .chip--accent { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+
+  .diagram { padding: 20px 14px; }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .dg-label { font-family: var(--font-mono); font-size: 10px; fill: var(--ink-3); }
+  .dg-title { font-family: var(--font-display); font-size: 13px; font-weight: 600; fill: var(--ink); }
+  .dg-note { font-family: var(--font-mono); font-size: 10.5px; fill: var(--ink-2); }
+
+  .defect { border: 1px solid var(--flag-line); background: var(--flag-soft); border-radius: 8px; padding: 19px 21px; margin: 20px 0; }
+  .defect-n { font-family: var(--font-mono); font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--flag); margin: 0 0 7px; }
+  .defect h3 { margin: 0 0 11px; font-size: 17px; }
+  .defect p { margin: 0 0 12px; font-size: 15.5px; color: var(--ink-2); line-height: 1.58; }
+  .defect > :last-child { margin-bottom: 0; }
+  .fix { border-top: 1px solid var(--flag-line); margin-top: 14px; padding-top: 13px; font-size: 15px; color: var(--ink-2); }
+  .fix b { color: var(--ink); }
+
+  .talk { margin: 22px 0; display: flex; flex-direction: column; gap: 12px; max-width: var(--measure); }
+  .turn { border: 1px solid var(--hairline); border-radius: 8px; padding: 14px 16px; background: var(--surface); }
+  .turn q { display: block; font-weight: 600; color: var(--ink); font-size: 15.5px; quotes: none; margin-bottom: 8px; }
+  .turn p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--ink-2); }
+  .turn .tool { margin-top: 10px; font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-3); display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 30px; }
+  .cta a { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 500; font-size: 14.5px; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--hairline-strong); border-radius: 6px; padding: 10px 16px; transition: border-color .13s, background .13s; }
+  .cta a:hover { border-color: var(--accent-line); background: var(--raised); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <nav class="rail" aria-label="Seções">
+    <p class="rail-mark">Painel Macro · dossiê</p>
+    <ul class="rail-list" id="rail"></ul>
+    <div class="rail-foot">
+      TypeScript · React 19<br />
+      Express 5 · Prisma · SQLite<br />
+      Ollama qwen2.5:14b<br />
+      <span style="opacity:.7">63 arquivos · 5.583 linhas</span>
+    </div>
+  </nav>
+
+  <main class="main">
+    <!-- ============ ABERTURA ============ -->
+    <header class="hero" id="abertura">
+      <span class="hero-tag"><i class="hero-dot"></i>Projeto de portfólio · roda local</span>
+
+      <h1>Um painel que recusa mostrar um número que não consegue rastrear</h1>
+
+      <div class="prose">
+        <p class="lede">
+          Séries temporais do SGS, o sistema do Banco Central do Brasil — juros, inflação,
+          câmbio, atividade e crédito — com resumo automático e assistente conversacional
+          num modelo que roda na própria máquina.
+        </p>
+      </div>
+
+      <blockquote class="thesis">
+        O dado é real e público. O que o projeto demonstra é o que se constrói <em>em volta</em>
+        dele: uma fronteira honesta entre o que é calculado e o que é gerado, e a recusa de
+        exibir um número que não se possa rastrear até a fonte.
+      </blockquote>
+
+      <div class="facts">
+        <div class="fact"><span class="fact-n tnum">14/14</span><span class="fact-l">séries conferidas contra a API real</span></div>
+        <div class="fact"><span class="fact-n tnum">9.087</span><span class="fact-l">pontos em cache local</span></div>
+        <div class="fact"><span class="fact-n tnum">6</span><span class="fact-l">ferramentas do assistente</span></div>
+        <div class="fact"><span class="fact-n tnum">0</span><span class="fact-l">consultas geradas pelo modelo</span></div>
+        <div class="fact"><span class="fact-n tnum">3</span><span class="fact-l">cores na escala categórica</span></div>
+      </div>
+
+      <div class="cta">
+        <a href="painel/">Abrir o painel →</a>
+        <a href="https://github.com/Ricks-rib/painel-macroeconomico">Código no GitHub →</a>
+      </div>
+    </header>
+
+    <!-- ============ FONTE ============ -->
+    <section id="fonte">
+      <p class="eyebrow">Decisão 1</p>
+      <h2>A fonte externa não pode derrubar o painel</h2>
+
+      <div class="prose">
+        <p>
+          O SGS é público, gratuito e <strong>fora do nosso controle</strong>. Um painel que
+          consulta a API do Banco Central a cada carregamento de tela fica tão disponível
+          quanto ela — e tão lento quanto ela num dia ruim.
+        </p>
+        <p>
+          Por isso há uma camada de sincronização: um job busca as séries, grava os pontos em
+          SQLite, e <strong>toda leitura vem da cópia local</strong>. A API externa é tocada em
+          três momentos — no boot, a cada hora, e sob demanda quando uma série passa do prazo
+          de revalidação da sua frequência. Uma série mensal não ganha nada sendo consultada de
+          hora em hora.
+        </p>
+      </div>
+
+      <div class="note note--flag">
+        <strong>O preço é a consistência eventual, e ele é declarado.</strong> Todo cabeçalho
+        exibe a idade do dado e as séries que falharam na última tentativa. Um painel que
+        assume esse custo e não informa está mentindo por omissão: a pessoa acredita estar
+        vendo agora, e não está.
+      </div>
+
+      <div class="prose">
+        <p>
+          Testado com a fonte inacessível: as 14 séries falham, a tela continua servindo o
+          último dado conhecido, e as 14 falhas aparecem no cabeçalho.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ SGS ============ -->
+    <section id="sgs">
+      <p class="eyebrow eyebrow--flag">Decisão 2</p>
+      <h2>O que a API do SGS faz de inesperado</h2>
+
+      <div class="prose">
+        <p>
+          Nada abaixo estava numa documentação. Tudo foi medido contra a API real, e cada item
+          quebraria uma implementação ingênua.
+        </p>
+      </div>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th style="width:38%">O que se pede</th><th>O que acontece</th></tr></thead>
+          <tbody>
+            <tr><td><code>/dados/ultimos/{N}</code> com N &gt; 20</td><td class="strong">HTTP 400 — “A quantidade máxima de valores deve ser 20”</td></tr>
+            <tr><td><code>/dados?dataInicial…</code> em faixa longa</td><td class="strong">HTTP 406 acima de ~10 anos</td></tr>
+            <tr><td>Intervalo sem dados</td><td class="strong">HTTP 404 — não uma lista vazia</td></tr>
+            <tr><td>Código inexistente</td><td class="strong">Uma página HTML — não JSON</td></tr>
+            <tr><td>O mesmo valor em formatos diferentes</td><td class="strong">JSON usa <code>"5.1862"</code>; CSV usa <code>"4,74"</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="prose">
+        <p>
+          O teto de 20 pontos é o que define a estratégia de carga: <strong>backfill</strong>
+          pelo endpoint de intervalo, fatiado em janelas de 9 anos, e <strong>incremental</strong>
+          pelos últimos 20 pontos — que na revalidação de rotina sobram, e ainda pegam revisão
+          retroativa recente.
+        </p>
+      </div>
+
+      <div class="note">
+        <strong>Os quatro comportamentos estão codificados e comentados no cliente.</strong>
+        Peculiaridade de fonte externa descoberta em campo e não registrada no código é
+        conhecimento que se perde na primeira refatoração — e o próximo a mexer refaz a mesma
+        investigação.
+      </div>
+    </section>
+
+    <!-- ============ CATALOGO ============ -->
+    <section id="catalogo">
+      <p class="eyebrow eyebrow--flag">Decisão 3</p>
+      <h2>Um código do SGS é um número opaco</h2>
+
+      <pre><code><span class="c-bad">20714</span>  parecia inadimplência de pessoa física
+       devolveu ~33% <span class="c-cmt">— impossível para inadimplência de crédito</span>
+
+<span class="c-bad">13521</span>  parecia o IPCA acumulado em 12 meses
+       devolveu 3,00 fixo em 2024, 2025 e 2026 <span class="c-cmt">— é meta de inflação</span></code></pre>
+
+      <div class="prose">
+        <p>
+          <strong>Nenhum dos dois teria dado erro.</strong> Teriam virado um card com um número
+          errado, e quem olhasse não teria como perceber. É o mesmo modo de falha de uma
+          citação inventada: a resposta errada é indistinguível da certa.
+        </p>
+        <p>
+          Por isso a verificação é <strong>um campo do dado</strong>, não uma etapa que alguém
+          lembra de fazer. Cada série no catálogo carrega <code>verified</code>, a data da
+          conferência e a evidência que a sustenta:
+        </p>
+      </div>
+
+      <div class="panel">
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Série</th><th>O que foi conferido</th></tr></thead>
+            <tbody>
+              <tr><td class="strong">Selic diária</td><td>Vem em <strong>% ao dia</strong>, não ao ano. 0,051660 composto em 252 dias úteis dá ~13,9% a.a., coerente com a meta de 14% — foi assim que a unidade foi confirmada.</td></tr>
+              <tr><td class="strong">CDI diário</td><td>Coincide com a Selic efetiva <strong>por conjuntura, não por definição</strong>. São séries distintas que hoje andam juntas.</td></tr>
+              <tr><td class="strong">Inadimplência PF</td><td>Fica sempre acima do total, como a composição da carteira exige.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Série não verificada não entra em lugar nenhum:</strong> nem em sincronização,
+        nem em ferramenta de IA, nem em gráfico. Aparece só na tela de Configurações, marcada
+        como pendente, com link para o catálogo oficial. A regra vive no tipo, não na
+        disciplina de quem escreve o código.
+      </div>
+    </section>
+
+    <!-- ============ UNIDADES ============ -->
+    <section id="unidades">
+      <p class="eyebrow">Decisão 4</p>
+      <h2>Variação percentual e ponto percentual não são a mesma coisa</h2>
+
+      <div class="prose">
+        <p>
+          Dizer que o IPCA “caiu 56%” ao ir de 0,16% para 0,07% é aritmeticamente verdadeiro e
+          praticamente inútil. O que um economista diz é <strong>“caiu 0,09 p.p.”</strong>.
+        </p>
+        <p>
+          Cada série declara no catálogo como deve ser comparada — pontos percentuais para as
+          que já são percentuais, variação relativa para as de nível — e o servidor resolve
+          isso <strong>uma vez</strong>. O card, o gráfico e o assistente recebem o mesmo número
+          com a mesma unidade; não existe caminho em que dois deles discordem.
+        </p>
+      </div>
+
+      <h3>A mesma disciplina vale para a cor</h3>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Indicador</th><th>Subir é</th><th>Por quê</th></tr></thead>
+          <tbody>
+            <tr><td class="strong">IPCA</td><td><span class="chip chip--bad">ruim</span></td><td>Inflação alta corrói poder de compra.</td></tr>
+            <tr><td class="strong">PIB</td><td><span class="chip chip--good">bom</span></td><td>Atividade econômica maior.</td></tr>
+            <tr><td class="strong">Selic</td><td><span class="chip">neutro</span></td><td>Decisão de política monetária, não notícia boa ou ruim.</td></tr>
+            <tr><td class="strong">Câmbio</td><td><span class="chip">neutro</span></td><td>Alta do dólar beneficia exportador e penaliza importador.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>Pintar Selic ou câmbio de verde ou vermelho seria o painel emitindo um juízo
+        que o dado não sustenta.</strong> É a mesma fronteira do resto do projeto, aplicada à
+        camada visual: a cor também é uma afirmação.
+      </div>
+    </section>
+
+    <!-- ============ ANCORAGEM ============ -->
+    <section id="ancoragem">
+      <p class="eyebrow">Decisão 5</p>
+      <h2>Prompt é mitigação; a regra que precisa valer sempre existe em código</h2>
+
+      <div class="prose">
+        <p>
+          O assistente usa <strong>function calling</strong>: seis ferramentas com parâmetros
+          tipados e consultas pré-escritas. O modelo escolhe o que perguntar; ele nunca gera
+          consulta nem calcula variação — as ferramentas devolvem o número já calculado, das
+          mesmas funções que alimentam a tela.
+        </p>
+        <p>
+          <strong>Isso não basta.</strong> Toda resposta passa por uma checagem de ancoragem:
+          cada número presente no texto é conferido contra os números que passaram pelo retorno
+          das ferramentas naquele turno. Número sem origem reprova a resposta, o sistema injeta
+          uma correção e força nova consulta; reincidiu, a resposta vira uma admissão de que
+          não sabe.
+        </p>
+      </div>
+
+      <div class="defect">
+        <p class="defect-n">Episódio 1 · o verificador acertou</p>
+        <h3>Duas grandezas parecidas para a mesma pergunta</h3>
+        <pre><code>ferramenta devolveu   variacao: -0.2189 (%)
+                      diferencaAbsoluta: -0.0113 (R$)
+modelo escreveu       "variação de -1,13%"   <span class="c-bad">← errado</span></code></pre>
+        <p>
+          A checagem pegou. Mas a correção certa não foi ajustar o prompt: foi <strong>parar de
+          entregar duas grandezas parecidas para a mesma pergunta</strong>. A ferramenta passou
+          a devolver um número só por conceito.
+        </p>
+        <p class="fix">
+          <b>A lição:</b> quando um modelo confunde duas coisas parecidas, às vezes o defeito
+          está em terem sido oferecidas juntas.
+        </p>
+      </div>
+
+      <div class="defect">
+        <p class="defect-n">Episódios 2 e 3 · o verificador errou</p>
+        <h3>Dois falsos positivos que reprovavam respostas corretas</h3>
+        <pre><code>"R$ 1.167.869 milhões"   <span class="c-bad">→ reprovado como invenção</span>
+"queda de 0,22%"         <span class="c-bad">→ reprovado como invenção</span></code></pre>
+        <p>
+          O primeiro porque o extrator quebrava o separador de milhar brasileiro em
+          <code>1.167</code> e <code>869</code> — dois números que não existiam em lugar nenhum.
+          O segundo porque em português <strong>o sentido da variação vai na palavra, não no
+          sinal</strong>: “queda de 0,22%” é a forma correta de dizer −0,22%.
+        </p>
+        <p class="fix">
+          <b>A lição:</b> ambos reprovavam respostas <b>corretas</b> — e um verificador que
+          reprova o certo é abandonado na primeira semana. Detectar invenção é a parte fácil;
+          não acusar quem acertou é a difícil.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ CONCEITO ============ -->
+    <section id="conceito">
+      <p class="eyebrow eyebrow--flag">Decisão 6</p>
+      <h2>Pergunta conceitual e pergunta de valor são coisas diferentes</h2>
+
+      <div class="prose">
+        <p>
+          Encontrado usando o painel, não em teste. Perguntado <em>“o que é inflação?”</em>, o
+          assistente respondia com o IPCA do mês. O número estava certo, a unidade estava
+          certa — e a resposta não era a da pergunta.
+        </p>
+        <p>
+          A causa não era a checagem de ancoragem: ela só percorre números, e uma definição não
+          tem nenhum, então passaria trivialmente. Era o prompt, inteiramente moldado em torno
+          de números, e seis ferramentas que só sabem buscar dado. O modelo fez a única coisa
+          que o desenho oferecia.
+        </p>
+      </div>
+
+      <div class="note note--bad">
+        <strong>O detalhe mais grave era outro.</strong> A resposta escrevia “O IPCA (inflação
+        mensal)”, tratando como sinônimos o conceito, o índice que o mede e um recorte de
+        periodicidade. É exatamente a imprecisão que o projeto recusa em outro lugar — a
+        história do código <code>13521</code>, que “parecia o IPCA acumulado” e era meta de
+        inflação.
+      </div>
+
+      <div class="prose">
+        <p>
+          A correção foi uma regra no prompt separando os dois casos. Hoje a mesma sequência
+          responde assim:
+        </p>
+      </div>
+
+      <div class="talk">
+        <div class="turn">
+          <q>o que é inflação?</q>
+          <p>
+            Inflação é o fenômeno econômico que se refere ao aumento geral dos preços de bens e
+            serviços em uma economia, resultando em uma diminuição do poder de compra da moeda.
+            No Brasil, o IPCA (Índice Nacional de Preços ao Consumidor Amplo) é o principal
+            indicador oficial que mede a inflação.
+          </p>
+          <p class="tool"><span class="chip chip--accent">nenhuma ferramenta</span> não havia número a buscar</p>
+        </div>
+        <div class="turn">
+          <q>e quanto ela está?</q>
+          <p>
+            O IPCA (variável mensal) está em 0,07% em julho de 2026. Comparado ao mês anterior,
+            houve uma queda de 0,09 pontos percentuais.
+          </p>
+          <p class="tool"><span class="chip">buscar_serie_atual</span> serie: ipca-mensal</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Um limite que passa a existir, e vale declarar:</strong> a definição é texto
+        gerado que a checagem de ancoragem não cobre — ela não tem número para conferir. Um
+        modelo local de 14B definindo conceito econômico é a superfície não verificada do
+        sistema. Isso não é motivo para não fazer; é motivo para dizer.
+      </div>
+    </section>
+
+    <!-- ============ CONTEXTO ============ -->
+    <section id="contexto">
+      <p class="eyebrow">Decisão 7</p>
+      <h2>O assistente vê o que você está vendo</h2>
+
+      <div class="prose">
+        <p>
+          Cada página registra o recorte que está na tela, e o chat envia isso junto com a
+          pergunta. Perguntar <em>“e isso aí, está alto?”</em> olhando o gráfico funciona.
+        </p>
+        <p>
+          O detalhe está em <strong>como</strong> esse bloco entra: como se fosse o retorno de
+          uma ferramenta chamada <code>contexto_da_tela</code>. Colá-lo no prompt criaria um
+          buraco na checagem — ela só considera fundamentado o que passou por ferramenta, e o
+          modelo seria acusado de inventar um número que está na tela.
+        </p>
+      </div>
+
+      <div class="note">
+        <strong>Tratando o contexto como mais uma origem declarada</strong>, os números visíveis
+        passam pelo mesmo caminho e pela mesma regra. Nenhuma garantia foi enfraquecida; apenas
+        mais uma origem legítima foi declarada como tal.
+      </div>
+
+      <div class="prose">
+        <p>
+          Na prática, com o IPCA na tela: <em>“e isso aí, está alto?”</em> é respondido sem
+          consulta nenhuma; <em>“e o dólar?”</em> sai do recorte e dispara a ferramenta. A
+          interface mostra qual foi o caso, sob cada resposta.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ PALETA ============ -->
+    <section id="paleta">
+      <p class="eyebrow">Decisão 8</p>
+      <h2>A paleta foi medida, não escolhida</h2>
+
+      <div class="prose">
+        <p>
+          Fundo claro é mais difícil que escuro: a margem de contraste é menor e o erro é menos
+          perdoável quando o painel vai para uma reunião projetada.
+        </p>
+        <p>
+          Todos os valores foram validados — faixa de luminosidade, piso de croma, separação sob
+          daltonismo e contraste, contra as duas superfícies reais do painel. As cores de texto
+          foram conferidas no piso de <strong>4,5:1</strong>, e não no de 3:1, porque aparecem
+          em número pequeno.
+        </p>
+      </div>
+
+      <h3>Três cores, e o limite é proposital</h3>
+
+      <div class="prose">
+        <p>
+          As três passam em todos os pares nos dois fundos. A quarta cor, em todas as ordenações
+          testadas, aproximava demais dois tons. <strong>Nenhum gráfico deste painel precisa de
+          mais de três séries</strong> — quando precisar, a saída é separar em gráficos, não
+          inventar um quarto tom.
+        </p>
+      </div>
+
+      <div class="note note--flag">
+        <strong>Pela mesma razão não existe gráfico de dois eixos.</strong> Sobrepor a meta
+        Selic (14% ao ano) e a Selic efetiva (0,05% ao dia) numa figura com duas escalas produz
+        cruzamentos que não significam nada — o ponto de encontro depende de como cada eixo foi
+        esticado. As séries são agrupadas por unidade e cada grupo ganha seu gráfico.
+      </div>
+    </section>
+
+    <!-- ============ ESCOPO ============ -->
+    <section id="escopo">
+      <p class="eyebrow">Fechamento</p>
+      <h2>Fora de escopo, deliberadamente</h2>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th style="width:26%">O que não tem</th><th>Por quê</th></tr></thead>
+          <tbody>
+            <tr><td class="strong">Autenticação</td><td>Dado macroeconômico é público — não há dono do dado a proteger, e inventar um login seria teatro. O que permanece da disciplina de acesso é a superfície fechada do assistente: o modelo nunca gera consulta, só escolhe entre ferramentas pré-escritas.</td></tr>
+            <tr><td class="strong">Tema escuro</td><td>Claro por decisão, não por limitação — a paleta foi validada para a superfície clara. Suportar o escuro é redeclarar o bloco de tokens sob uma media query; nenhum componente muda, porque nenhum usa cor literal.</td></tr>
+            <tr><td class="strong">Previsão e recomendação</td><td>O assistente descreve o que os dados dizem e é instruído a não projetar nem aconselhar investimento.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>O que eu faria diferente com mais escala</h3>
+
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Hoje</th><th>Com volume real</th></tr></thead>
+          <tbody>
+            <tr><td>SQLite</td><td>Postgres, com as séries particionadas por código</td></tr>
+            <tr><td>Derivação em tempo de leitura</td><td>Materialização das janelas mais consultadas</td></tr>
+            <tr><td><code>setInterval</code> no processo da API</td><td>Worker de fila, com retry por série</td></tr>
+            <tr><td>Sincronização série a série, sequencial</td><td>Paralelismo limitado, respeitando o serviço público</td></tr>
+            <tr><td>Histórico do chat na requisição</td><td>Persistido, com sessão do servidor</td></tr>
+            <tr><td>Verificação de série anotada no catálogo</td><td>Rotina que confere a ordem de grandeza a cada sync</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cta">
+        <a href="painel/">Abrir o painel →</a>
+        <a href="https://github.com/Ricks-rib/painel-macroeconomico">Código no GitHub →</a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  /* Índice lateral gerado das seções, com destaque do que está na tela.
+     Escrever o índice à mão garante que ele fica desatualizado. */
+  (function () {
+    var secoes = [].slice.call(document.querySelectorAll("section[id], header[id]"));
+    var rail = document.getElementById("rail");
+    var links = {};
+
+    secoes.forEach(function (s) {
+      var titulo = s.querySelector("h1, h2");
+      if (!titulo) return;
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.className = "rail-link";
+      a.href = "#" + s.id;
+      a.textContent = s.id === "abertura" ? "Abertura" : titulo.textContent.trim();
+      li.appendChild(a);
+      rail.appendChild(li);
+      links[s.id] = a;
+    });
+
+    var obs = new IntersectionObserver(function (entradas) {
+      entradas.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        Object.keys(links).forEach(function (k) { links[k].removeAttribute("aria-current"); });
+        if (links[e.target.id]) links[e.target.id].setAttribute("aria-current", "true");
+      });
+    }, { rootMargin: "-10% 0px -80% 0px" });
+
+    secoes.forEach(function (s) { obs.observe(s); });
+  })();
+</script>
+</body>
+</html>

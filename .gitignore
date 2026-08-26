@@ -1,0 +1,18 @@
+node_modules/
+dist/
+build/
+.turbo/
+
+# Base local: reproduzivel a partir da API do BCB via `pnpm sync`.
+*.db
+*.db-journal
+
+.env
+.env.*
+!.env.example
+
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

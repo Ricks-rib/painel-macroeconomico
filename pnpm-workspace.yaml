@@ -1,0 +1,15 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# pnpm bloqueia scripts de build de dependencias por padrao (defesa contra
+# postinstall malicioso em cadeia de suprimentos). Estas quatro sao aprovadas
+# explicitamente porque precisam do postinstall para funcionar:
+#   prisma / @prisma/engines -> baixam os binarios de query engine
+#   @prisma/client           -> gera o client tipado a partir do schema
+#   esbuild                  -> baixa o binario nativo usado por tsx e Vite
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true

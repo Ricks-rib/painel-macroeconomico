@@ -1,0 +1,16 @@
+# Fim de linha normalizado no repositorio.
+#
+# Sem isto, um clone no Windows converte LF para CRLF na copia de trabalho e
+# o proximo commit registra o arquivo inteiro como alterado -- um diff falso
+# que esconde a mudanca real. Guardar sempre LF elimina a ambiguidade.
+* text=auto eol=lf
+
+# Binarios: nunca converter.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.db   binary
+*.lance binary

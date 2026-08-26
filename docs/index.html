@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Painel Macroeconômico</title>
+<meta name="description" content="Indicadores do Banco Central do Brasil com resumo e assistente em modelo local, ancorados nos dados." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" />
+
+<style>
+  /* Mesmos tokens do dossiê: as páginas são uma família.
+     Claro por origem — o painel é claro por decisão. */
+  :root {
+    --ground: #eef0f4;
+    --surface: #ffffff;
+    --raised: #f5f7fa;
+    --hairline: rgba(16, 21, 28, 0.11);
+    --hairline-strong: rgba(16, 21, 28, 0.2);
+    --ink: #10151c;
+    --ink-2: #47525e;
+    --ink-3: #737f8d;
+    --accent: #1c62b5;
+    --accent-line: rgba(28, 98, 181, 0.26);
+    --good: #10704f;
+    --shadow: 0 1px 2px rgba(16, 21, 28, 0.06), 0 8px 24px -14px rgba(16, 21, 28, 0.22);
+    --font-display: "Archivo", "Segoe UI", system-ui, sans-serif;
+    --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0e1218; --surface: #151b24; --raised: #1c242f;
+      --hairline: rgba(233, 240, 248, 0.09); --hairline-strong: rgba(233, 240, 248, 0.17);
+      --ink: #eef1f5; --ink-2: #a7b2c1; --ink-3: #6d7a8b;
+      --accent: #4f97ea; --accent-line: rgba(79, 151, 234, 0.34); --good: #35b07a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    margin: 0; min-height: 100vh; background: var(--ground); color: var(--ink);
+    font-family: var(--font-body); font-size: 17px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center; padding: 40px 24px;
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap { width: 100%; max-width: 940px; }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono);
+    font-size: 12px; letter-spacing: .04em; color: var(--ink-3);
+    text-transform: uppercase; margin-bottom: 22px;
+  }
+  .tag i { width: 6px; height: 6px; border-radius: 50%; background: var(--good); flex: none; }
+
+  h1 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(30px, 5vw, 46px); line-height: 1.12;
+    letter-spacing: -.02em; margin: 0 0 18px;
+  }
+
+  .lede { color: var(--ink-2); font-size: 19px; margin: 0 0 14px; max-width: 62ch; }
+  .subs { color: var(--ink-3); font-size: 15px; margin: 0 0 40px; max-width: 62ch; }
+  .subs code {
+    font-family: var(--font-mono); font-size: 13px; background: var(--surface);
+    border: 1px solid var(--hairline); border-radius: 3px; padding: 1px 5px; color: var(--ink-2);
+  }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 700px) { .cards { grid-template-columns: 1fr; } }
+
+  .card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--hairline-strong);
+    border-radius: 8px; padding: 26px 24px 24px;
+    transition: border-color .15s, transform .15s, background .15s;
+  }
+  .card:hover {
+    border-color: var(--accent-line); background: var(--raised);
+    transform: translateY(-2px); box-shadow: var(--shadow);
+  }
+  .card-k {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 12px;
+  }
+  .card h2 { font-family: var(--font-display); font-weight: 600; font-size: 21px; margin: 0 0 10px; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 15.5px; line-height: 1.55; }
+  .card-go {
+    display: inline-flex; align-items: center; gap: 7px; margin-top: 16px;
+    font-family: var(--font-display); font-weight: 500; font-size: 14px; color: var(--accent);
+  }
+
+  .foot {
+    margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--hairline);
+    display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: baseline;
+    font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-3);
+  }
+  .foot a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--hairline-strong); }
+  .foot a:hover { color: var(--accent); border-color: var(--accent-line); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .card:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="tag"><i></i>Projeto de portfólio · roda local</p>
+
+    <h1>Painel Macroeconômico</h1>
+
+    <p class="lede">
+      Séries temporais do SGS, o sistema do Banco Central do Brasil — juros, inflação,
+      câmbio, atividade e crédito — com resumo automático e assistente conversacional
+      num modelo que roda na própria máquina.
+    </p>
+
+    <p class="subs">
+      As duas páginas abaixo são estáticas e abrem direto no navegador. Para rodar com
+      dados ao vivo, buscando as séries na API do Banco Central, o repositório traz as
+      instruções — são quatro comandos a partir de <code>pnpm install</code>.
+    </p>
+
+    <div class="cards">
+      <a class="card" href="painel/">
+        <p class="card-k">O produto</p>
+        <h2>Abrir o painel</h2>
+        <p>
+          O painel como ele é, com os dados reais congelados: 14 séries conferidas,
+          gráficos por categoria, o resumo de abertura e o assistente.
+        </p>
+        <span class="card-go">Abrir →</span>
+      </a>
+
+      <a class="card" href="dossie.html">
+        <p class="card-k">A engenharia</p>
+        <h2>Ler o dossiê</h2>
+        <p>
+          As oito decisões e a medição que sustenta cada uma — incluindo os dois códigos
+          do Banco Central que devolviam a série errada sem dar erro nenhum.
+        </p>
+        <span class="card-go">Ler →</span>
+      </a>
+    </div>
+
+    <div class="foot">
+      <span>React 19 · TypeScript · Express 5 · Prisma · Ollama</span>
+      <a href="https://github.com/Ricks-rib/painel-macroeconomico">Código no GitHub</a>
+    </div>
+  </main>
+</body>
+</html>

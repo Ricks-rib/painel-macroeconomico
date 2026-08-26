@@ -1,0 +1,143 @@
+@import 'tailwindcss';
+
+/**
+ * Mini design system -- tema institucional claro.
+ *
+ * DECISAO: tema claro unico, assumido.
+ *
+ * Um painel de indicadores economicos e lido do lado de quem presta contas:
+ * impresso, projetado em reuniao, colado em relatorio. O fundo claro e o
+ * ambiente natural desse uso, e manter dois temas custa o dobro de decisoes de
+ * contraste. Suportar o escuro depois e re-declarar este bloco de tokens sob
+ * uma media query -- nenhum componente muda, porque nenhum componente usa cor
+ * literal.
+ *
+ * TODOS OS VALORES ABAIXO FORAM MEDIDOS, nao escolhidos a olho:
+ *  - a escala categorica passou no validador de paleta (faixa de luminosidade,
+ *    piso de croma, separacao sob daltonismo e contraste) contra a superficie
+ *    #ffffff, no modo de TODOS os pares;
+ *  - as cores de tinta e de estado foram conferidas em contraste WCAG contra as
+ *    duas superficies (#ffffff e #f3f5f8), no piso de 4.5:1 de texto -- e nao no
+ *    de 3:1, porque aparecem em numero pequeno, nao em bloco grande.
+ * Trocar um hex aqui exige revalidar; nao e escolha de gosto.
+ */
+@theme {
+  /* --- Superficies ------------------------------------------------------ */
+  --color-plane: #f3f5f8;
+  --color-surface: #ffffff;
+  --color-elevated: #eef1f6;
+  --color-overlay: #e4e9ef;
+
+  /* --- Tinta (contraste vs #ffffff / #f3f5f8) --------------------------- */
+  --color-ink: #0b1f33; /* 16.69 / 15.28 */
+  --color-ink-2: #33475a; /* 9.59 / 8.78 */
+  --color-ink-muted: #5e6e80; /* 5.23 / 4.79 */
+
+  /* --- Cromo de grafico (recessivo de proposito) ------------------------ */
+  --color-grid: #e2e8f0;
+  --color-axis: #c7d0da;
+  --color-hairline: #dde3ea;
+
+  /* --- Marca institucional ---------------------------------------------- */
+  --color-primary: #0a2f4f; /* 13.70 -- barra lateral, cabecalhos, botao */
+  --color-primary-2: #123f66;
+  --color-accent: #0f5c66;
+
+  /**
+   * --- Escala categorica: TRES slots, e o limite e proposital -------------
+   *
+   * Estes tres passam todos os pares nos dois fundos (pior par dE 13,0 sob
+   * deuteranopia e 16,3 em visao normal) e todos superam 3:1 de contraste. Uma
+   * quarta cor derruba isso: nas ordenacoes testadas, o quarto slot sempre
+   * aproximava demais dois tons (laranja com vermelho, ou laranja com verde)
+   * em visao normal.
+   *
+   * Nenhum grafico deste painel precisa de mais de tres series -- o caso mais
+   * cheio e inflacao, com IPCA mensal, IPCA em 12 meses e IGP-M. Quando um dia
+   * precisar, a saida e separar em graficos, nao inventar um quarto tom.
+   */
+  --color-series-1: #2a78d6;
+  --color-series-2: #eb6834;
+  --color-series-3: #4a3aa7;
+
+  /**
+   * --- Estado: reservado, nunca vira "serie 4" ---------------------------
+   *
+   * Passos escuros o bastante para servirem de TEXTO (o delta de um indicador
+   * e um numero pequeno, nao uma barra colorida). E nunca aparecem sozinhos:
+   * vao sempre com seta e rotulo, porque cor isolada nao comunica direcao a
+   * quem nao a distingue.
+   */
+  --color-good: #006300; /* 7.54 / 6.90 */
+  --color-warning: #8a5a00; /* 5.93 / 5.43 */
+  --color-critical: #b3261e; /* 6.54 / 5.98 */
+
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Cantos mais retos que os de um app de consumo: le como relatorio. */
+  --radius-card: 0.5rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-plane);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/**
+ * Algarismos tabulares onde numeros se alinham em coluna (tabelas, eixos,
+ * listas de indicadores). Numeros grandes e isolados ficam com os
+ * proporcionais, que sao mais legiveis fora de coluna.
+ */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barra de rolagem discreta -- a padrao do Windows destoa da superficie. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-axis) transparent;
+}
+
+/* Foco visivel e consistente: navegacao por teclado nao pode ficar invisivel. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respeita quem pediu menos animacao no sistema. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 1.8s ease-in-out infinite;
+}

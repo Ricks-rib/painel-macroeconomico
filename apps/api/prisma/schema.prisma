@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Um ponto de serie temporal, como veio do SGS.
+///
+/// DECISAO 1 -- uma tabela para todas as series, nao uma tabela por serie.
+/// O catalogo e dado, nao estrutura: acrescentar um indicador ao painel e
+/// acrescentar uma linha em `series-catalog.ts`, sem migracao de schema.
+///
+/// DECISAO 2 -- `data` e String ISO (AAAA-MM-DD), nao DateTime.
+/// Um ponto de serie diaria e uma DATA DE CALENDARIO, nao um instante. Guardar
+/// como DateTime obriga a escolher um fuso, e qualquer conversao posterior
+/// desloca o dado em um dia -- o bug classico deste tipo de aplicacao, que
+/// aparece so para quem roda a oeste de Greenwich e some na maquina de quem
+/// escreveu o codigo. Como string ISO a ordenacao lexicografica coincide com a
+/// cronologica, entao filtro e `ORDER BY` continuam funcionando.
+/// `syncedAt` permanece DateTime porque ai sim e um instante.
+///
+/// DECISAO 3 -- sem valor derivado (variacao, media movel) persistido.
+/// O volume total e de alguns milhares de pontos; derivar na leitura custa
+/// menos que manter uma segunda fonte da verdade sincronizada.
+model SeriesPoint {
+  codigo   Int
+  data     String
+  valor    Float
+  syncedAt DateTime
+
+  /// Chave natural composta: e o que torna o sync idempotente. Reprocessar a
+  /// mesma janela faz upsert, nunca duplica.
+  @@id([codigo, data])
+  @@index([codigo, data])
+  @@map("series_points")
+}
+
+/// Auditoria do job de sincronizacao.
+///
+/// Um painel alimentado por fonte externa precisa saber responder "de quando e
+/// este numero e o que falhou na ultima tentativa". Sem este registro, uma
+/// serie que parou de atualizar ha uma semana fica indistinguivel de uma serie
+/// que simplesmente nao mudou.
+model SyncRun {
+  id            String    @id
+  startedAt     DateTime
+  finishedAt    DateTime?
+  status        String
+  /// JSON: codigos solicitados, sincronizados e falhos (com o motivo).
+  seriesCodes   String
+  seriesOk      String
+  seriesFailed  String
+  pointsWritten Int       @default(0)
+  durationMs    Int?
+
+  @@index([startedAt])
+  @@map("sync_runs")
+}
