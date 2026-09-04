@@ -275,7 +275,54 @@ ferramentas do assistente. O frontend formata; não calcula.
   uma media query; nenhum componente muda, porque nenhum usa cor literal.
 - **Deploy.** Roda local. `pnpm build` faz typecheck e build do front.
 - **Previsão e recomendação.** O assistente descreve o que os dados dizem e é
-  instruído a não projetar nem aconselhar investimento.
+  instruído a não projetar nem aconselhar investimento. Os *próximos passos*
+  abaixo colocam essa fronteira em questão; enquanto ela não for redesenhada em
+  código, vale como está escrita aqui.
+
+---
+
+## Próximos passos
+
+Três direções pensadas, **nenhuma implementada**. Estão registradas aqui porque
+cada uma cobra alguma coisa das decisões acima — e é essa cobrança, não a
+funcionalidade, que decide se elas entram.
+
+### Carteira importada, comentada pelo assistente
+
+Importar uma carteira — posições e custo — e deixar o assistente comentá-la
+contra o pano de fundo macro que o painel já serve. "Carteira concentrada em
+consumo, com o IPCA acelerando" é uma frase que precisa dos dois lados para
+existir, e hoje só um deles está na tela.
+
+*O que isso cobra:* a carteira é dado do usuário, não série pública. Ela desfaz a
+premissa que justifica a ausência de autenticação — passa a existir dono do dado
+— e precisa entrar na checagem de ancoragem como uma origem declarada, do mesmo
+jeito que `contexto_da_tela` entrou. Nenhum número da carteira pode chegar ao
+texto sem ter passado por ferramenta.
+
+### Análise de ações
+
+Análise dos papéis da carteira e de qualquer outro que o usuário pesquise.
+
+*O que isso cobra:* o SGS não serve preço de ação. É uma segunda fonte externa, e
+merece o mesmo tratamento que o BCB recebeu — cópia local, idade do dado no
+cabeçalho, falha visível em vez de tela vazia — mais uma verificação própria,
+porque um ticker é tão opaco quanto um código do SGS e erra do mesmo jeito
+silencioso.
+
+### Perspectiva de alta ou de queda
+
+O caso que dá forma ao item: o usuário aponta um papel — Raízen (RAIZ4), por
+exemplo — e o assistente descreve o quadro e diz para onde ele inclina.
+
+*O que isso cobra:* é o único dos três que colide de frente com a fronteira do
+projeto. O assistente é instruído a não projetar, e a checagem de ancoragem sabe
+conferir se um número tem origem — não sabe conferir se uma projeção tem
+fundamento. Implementar isso antes de decidir como uma inclinação se justifica,
+como ela se marca como opinião e como ela se separa visualmente do dado seria
+desmontar a única coisa que este painel se propõe a demonstrar.
+
+---
 
 ## O que eu faria diferente com mais escala
 
