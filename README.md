@@ -161,7 +161,20 @@ naquele turno. Número sem origem reprova a resposta, o sistema injeta uma
 correção e força nova consulta; reincidiu, a resposta vira uma admissão de que
 não sabe.
 
-Três episódios reais de teste, todos preservados como caso de teste:
+A checagem **confere origem, não pertinência**. Ela garante que todo número
+saiu de uma ferramenta; não garante que ele responde à pergunta nem que
+continua com o nome do indicador de onde veio. Medido: pressionado por uma
+correção, o modelo buscou a série `meta-selic` e a rotulou como meta de
+inflação — o número tinha origem legítima e o rótulo estava trocado. A
+mitigação está no prompt; verificar pertinência em código exigiria o sistema
+saber o que cada série *significa*, e isso não está feito.
+
+`OLLAMA_SEED` fixa a amostragem. Temperatura baixa não é temperatura zero, e
+sem semente a mesma pergunta com o mesmo histórico dá respostas diferentes
+entre execuções — um defeito que aparece uma vez a cada tantas não tem como
+ser investigado.
+
+Quatro episódios reais, todos preservados como caso de teste:
 
 ```
 Modelo recebeu  variacao: -0.2189 (%)  e  diferencaAbsoluta: -0.0113 (R$)

@@ -56,17 +56,23 @@ const ROTEIROS = [
   },
   {
     id: "contexto-da-tela",
-    titulo: "O assistente vê o que você está vendo",
+    titulo: "O assistente vê o que você está vendo — e para onde não vê",
     nota:
-      "Com o IPCA na tela, a primeira pergunta é respondida sem consulta — o número já " +
-      "chegou como retorno da ferramenta `contexto_da_tela`. A segunda sai do recorte e " +
-      "dispara a ferramenta de verdade.",
+      "Com a página de Inflação aberta, a primeira pergunta é respondida sem consulta " +
+      "nenhuma: os números já chegaram como retorno da ferramenta `contexto_da_tela`. " +
+      "A segunda sai do recorte e dispara a ferramenta de verdade. A terceira pede um " +
+      "indicador que o catálogo não tem, e o assistente diz que não tem em vez de " +
+      "aproximar com o que tem à mão.",
     screenContext: {
       pagina: "Inflação",
       periodoDias: 365,
       series: [],
     },
-    turnos: ["e isso aí, está alto?", "e o dólar?"],
+    turnos: [
+      "qual desses três indicadores está negativo?",
+      "e o dólar?",
+      "e a taxa de desemprego?",
+    ],
   },
 ];
 

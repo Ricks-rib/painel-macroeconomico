@@ -104,6 +104,9 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
         keep_alive: KEEP_ALIVE,
         options: {
           temperature: options.temperature ?? 0.2,
+          // Semente fixa: a mesma pergunta com o mesmo historico devolve a
+          // mesma resposta. Ver a nota em `OLLAMA_SEED`.
+          seed: env.OLLAMA_SEED,
           ...(options.maxTokens ? { num_predict: options.maxTokens } : {}),
         },
       }),

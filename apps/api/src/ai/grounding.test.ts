@@ -62,6 +62,27 @@ describe('checkGrounding', () => {
 
   it('tolera inteiros pequenos usados como linguagem', () => {
     assert.equal(checkGrounding('Os 4 indicadores seguem estaveis.', permitidos).ok, true);
+    assert.equal(checkGrounding('Nos ultimos 12 meses o quadro mudou.', permitidos).ok, true);
+  });
+
+  it('nao tolera inteiro pequeno quando ele vem com unidade', () => {
+    // Caso real, visto ao gravar a demonstracao: o modelo afirmou que a meta
+    // do Banco Central "e de 3% a 5% ao ano". A meta e 3,00% com tolerancia
+    // de 1,5 p.p. As duas pontas passavam so por serem menores que 12.
+    //
+    // Conjunto proprio, e nao o do dolar: 5,1512 arredonda para 5, e o "5%"
+    // desta frase passaria por essa porta em vez de pela que o teste mede.
+    const nada = new Set<string>();
+
+    const check = checkGrounding('A meta do Banco Central e de 3% a 5% ao ano.', nada);
+    assert.equal(check.ok, false);
+    assert.deepEqual(check.unsupported, ['3', '5']);
+
+    assert.equal(checkGrounding('A alta foi de 2 p.p. no periodo.', nada).ok, false);
+    assert.equal(checkGrounding('O dolar subiu para R$ 6.', nada).ok, false);
+
+    // E o outro lado da regra: sem unidade colada, continua sendo linguagem.
+    assert.equal(checkGrounding('Os 3 indicadores de juros seguem estaveis.', nada).ok, true);
   });
 });
 

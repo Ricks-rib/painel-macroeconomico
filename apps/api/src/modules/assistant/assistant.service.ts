@@ -93,6 +93,11 @@ export async function runChat(request: ChatRequest): Promise<ChatResponse> {
     logger.warn('resposta reprovada na ancoragem', {
       numeros: check.unsupported.join(', '),
       tentativa: iteration + 1,
+      // Sem o texto, o numero sozinho nao diz se foi invencao ou uso do
+      // numero como linguagem ("nas ultimas 24 horas"). Os dois exigem
+      // correcoes opostas, e distinguir um do outro sem ver a frase e
+      // adivinhacao.
+      trecho: reply.slice(0, 220).replace(/\s+/g, ' '),
     });
 
     if (groundingCorrected) {

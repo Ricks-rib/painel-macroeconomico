@@ -472,6 +472,96 @@ modelo escreveu       "variação de -1,13%"   <span class="c-bad">← errado</s
           não acusar quem acertou é a difícil.
         </p>
       </div>
+
+      <div class="defect">
+        <p class="defect-n">Episódio 4 · o buraco na tolerância</p>
+        <h3>Número pequeno com unidade passava sem origem</h3>
+        <pre><code>"...a inflação está abaixo da meta do Banco Central,
+   que geralmente é de <span class="c-bad">3% a 5%</span> ao ano."   <span class="c-cmt">← aprovado</span></code></pre>
+        <p>
+          A meta do CMN é 3,00% com tolerância de 1,5 p.p. — a faixa é 1,5% a 4,5%, e o IPCA
+          de 4,44% não está abaixo dela. <strong>Duas afirmações erradas</strong>, ambas
+          aprovadas porque 3 e 5 são menores que 12, o teto da tolerância de
+          “número usado como linguagem”.
+        </p>
+        <p>
+          Essa tolerância existe por um bom motivo — “os três indicadores”, “nos últimos 12
+          meses”. O que faltava era a distinção: <strong>número com unidade colada é medição</strong>,
+          e medição precisa de origem por menor que seja. Sem unidade, continua podendo ser
+          linguagem.
+        </p>
+        <p class="fix">
+          <b>Encontrado ao gravar a demonstração</b>, não em teste — o que diz algo sobre onde
+          os defeitos deste tipo aparecem: no uso, não na suíte.
+        </p>
+      </div>
+
+      <h3>O limite que a checagem não cobre</h3>
+
+      <div class="prose">
+        <p>
+          Fechado o buraco acima, a mesma pergunta produziu isto — e desta vez
+          <strong>todos os números tinham origem legítima</strong>:
+        </p>
+      </div>
+
+      <pre><code>ferramenta   buscar_serie_atual(serie: "meta-selic") → 14% a.a.
+resposta     "A meta de inflação do Banco Central para 2026 é de 14%."
+             <span class="c-bad">↑ o número tem origem. O rótulo está trocado.</span></code></pre>
+
+      <div class="note note--bad">
+        <strong>A checagem de ancoragem confere origem, não pertinência.</strong> Ela garante
+        que todo número saiu de uma ferramenta. Não garante que o número responde à pergunta,
+        nem que continua com o nome do indicador de onde veio. Pressionado pela correção, o
+        modelo foi buscar a série cujo nome contém “meta” e a rotulou como meta de inflação.
+      </div>
+
+      <div class="prose">
+        <p>
+          A correção foi no prompt, e é declaradamente mitigação: não comparar com meta ou
+          banda que não tenha vindo de ferramenta, e manter o nome do indicador colado ao
+          número. <strong>Verificar pertinência em código exigiria o sistema saber o que cada
+          série significa</strong> — não apenas de onde ela veio. É o passo seguinte, e não
+          está feito.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ REPRODUTIBILIDADE ============ -->
+    <section id="reprodutibilidade">
+      <p class="eyebrow eyebrow--flag">Decisão 9</p>
+      <h2>Um defeito que aparece uma vez a cada tantas não pode ser investigado</h2>
+
+      <div class="prose">
+        <p>
+          Ao regravar a demonstração, uma pergunta simples — <em>“e o dólar?”</em> — ora era
+          respondida corretamente, ora produzia isto:
+        </p>
+      </div>
+
+      <pre><code>ferramenta devolveu   5,0962 R$
+modelo escreveu       "O valor atual do dólar comercial é de <span class="c-bad">5,23</span>"
+                      <span class="c-cmt">→ reprovado, corrigido, reincidiu, admitiu que não sabe</span></code></pre>
+
+      <div class="prose">
+        <p>
+          A checagem estava certa nas duas vezes: quando o modelo acertava, aprovava; quando
+          inventava, reprovava até a admissão. O problema era outro — <strong>o resultado não
+          se reproduzia</strong>, e um defeito intermitente não tem como ser investigado.
+        </p>
+        <p>
+          Temperatura baixa não é temperatura zero. Com <code>OLLAMA_SEED</code> fixa, a mesma
+          pergunta com o mesmo histórico devolve a mesma resposta — verificado com três
+          execuções de hash idêntico.
+        </p>
+      </div>
+
+      <div class="note">
+        <strong>E o log passou a registrar o trecho reprovado, não só o número.</strong> O
+        número sozinho não diz se foi invenção ou uso do número como linguagem, e os dois
+        pedem correções opostas. Distinguir um do outro sem ver a frase é adivinhação — foi
+        exatamente o que travou o diagnóstico do episódio anterior por vários minutos.
+      </div>
     </section>
 
     <!-- ============ CONCEITO ============ -->

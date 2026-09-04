@@ -27,6 +27,22 @@ const envSchema = z.object({
   OLLAMA_BASE_URL: z.string().url().default('http://127.0.0.1:11434'),
   OLLAMA_MODEL: z.string().default('qwen2.5:14b'),
 
+  /**
+   * Semente da amostragem.
+   *
+   * Temperatura baixa nao e temperatura zero: sem semente fixa, a mesma
+   * pergunta com o mesmo historico produz respostas diferentes entre
+   * execucoes. Foi medido gravando a demonstracao -- uma pergunta simples
+   * ("e o dolar?") ora era respondida corretamente, ora inventava uma
+   * cotacao que a checagem de ancoragem reprovava ate a admissao de que
+   * nao sabe.
+   *
+   * A checagem estava certa nas duas vezes. O que faltava era o resultado
+   * se reproduzir, para que um defeito assim possa ser investigado em vez
+   * de apenas reaparecer.
+   */
+  OLLAMA_SEED: z.coerce.number().int().default(20260904),
+
   BCB_API_BASE_URL: z.string().url().default('https://api.bcb.gov.br/dados/serie'),
   BCB_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(15_000),
 

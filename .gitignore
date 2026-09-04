@@ -16,3 +16,8 @@ Thumbs.db
 *.log
 .vscode/
 .idea/
+
+# Anotacoes pessoais na raiz: rascunho de ideias, nao conteudo do projeto.
+# `git add -A` varre tudo, e um arquivo assim num repositorio publico expoe
+# o que ainda era so um pensamento.
+/*.txt

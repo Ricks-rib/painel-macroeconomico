@@ -137,6 +137,34 @@ function normalize(value: number): string {
 /** Numeros pequenos usados como linguagem, nao como medicao. */
 const LANGUAGE_NUMBERS = new Set(Array.from({ length: 13 }, (_, index) => String(index)));
 
+/**
+ * O numero vem com unidade colada?
+ *
+ * A tolerancia de numero-como-linguagem existe para "os tres indicadores" e
+ * "nos ultimos 12 meses". Ela abria um buraco: qualquer afirmacao numerica
+ * com valor pequeno passava sem origem.
+ *
+ * Foi observado ao gravar a demonstracao. Perguntado se a inflacao estava
+ * alta, o modelo respondeu que ela "esta abaixo da meta do Banco Central,
+ * que geralmente e de 3% a 5% ao ano". A meta e 3,00% com tolerancia de
+ * 1,5 p.p. -- a faixa e 1,5% a 4,5%, e o IPCA de 4,44% nao esta abaixo
+ * dela. Duas afirmacoes erradas, ambas aprovadas porque 3 e 5 sao menores
+ * que 12.
+ *
+ * A distincao que faltava: numero com unidade e MEDICAO, e medicao precisa
+ * de origem, por menor que seja. Sem unidade, continua podendo ser
+ * linguagem.
+ */
+const MEDIDA_DEPOIS = /^\s*(%|p\.?\s?p\.?\b|pontos? percentuais?)/i;
+const MEDIDA_ANTES = /(R\$|US\$)\s*$/;
+
+function pareceMedicao(reply: string, inicio: number, raw: string): boolean {
+  return (
+    MEDIDA_DEPOIS.test(reply.slice(inicio + raw.length, inicio + raw.length + 22)) ||
+    MEDIDA_ANTES.test(reply.slice(Math.max(0, inicio - 5), inicio))
+  );
+}
+
 export function checkGrounding(reply: string, allowed: Set<string>): GroundingCheck {
   const unsupported: string[] = [];
 
@@ -146,7 +174,8 @@ export function checkGrounding(reply: string, allowed: Set<string>): GroundingCh
     if (!Number.isFinite(parsed)) continue;
 
     const key = normalize(parsed);
-    if (allowed.has(key) || LANGUAGE_NUMBERS.has(key)) continue;
+    if (allowed.has(key)) continue;
+    if (LANGUAGE_NUMBERS.has(key) && !pareceMedicao(reply, match.index, raw)) continue;
 
     unsupported.push(raw);
   }
